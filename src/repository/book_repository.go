@@ -19,8 +19,24 @@ type BookRepositoryImpl struct {
 }
 
 func (bookRepository *BookRepositoryImpl) FindAll() ([]*entity.Book, error) {
-	//TODO implement me
-	panic("implement me")
+	query := "SELECT id, title, author, category, published_year FROM book"
+	rows, err := bookRepository.DB.Query(query)
+	
+	if err != nil {
+		return nil, err
+	}
+
+	var books []*entity.Book
+	for rows.Next() {
+		book := entity.Book{}
+		err = rows.Scan(&book.ID, &book.Title, &book.Author, &book.Category, &book.PublishedYear)
+		if err != nil {
+			panic(err)
+		}
+		books = append(books, &book)
+	}
+
+	return books, nil
 }
 
 func (bookRepository *BookRepositoryImpl) FindById(id uint) (*entity.Book, error) {
@@ -34,8 +50,35 @@ func (bookRepository *BookRepositoryImpl) FindByName(name string) ([]*entity.Boo
 }
 
 func (bookRepository *BookRepositoryImpl) Save(book *entity.Book) (*entity.Book, error) {
-	//TODO implement me
-	panic("implement me")
+	tx, err := bookRepository.DB.Begin()
+	if err != nil {
+		panic(err)
+	}
+
+	//stmt, err := tx.Prepare("INSERT INTO book(title, author, category, publisherYear) VALUES(?, ?, ?, ?, ?)")
+	//if err != nil {
+	//	panic(err)
+	//}
+
+	result, err := tx.Exec("INSERT INTO book(title, author, category, published_year) VALUES(?, ?, ?, ?)", book.Title, book.Author, book.Category, book.PublishedYear)
+	if err != nil {
+		return nil, err
+	}
+
+	tx.Commit()
+
+	lastInsertId, err := result.LastInsertId()
+	if err != nil {
+		panic(err)
+	}
+
+	return &entity.Book{
+		ID:            uint(lastInsertId),
+		Title:         book.Title,
+		Author:        book.Author,
+		Category:      book.Category,
+		PublishedYear: book.PublishedYear,
+	}, nil
 }
 
 func (bookRepository *BookRepositoryImpl) Update(book *entity.Book) (*entity.Book, error) {

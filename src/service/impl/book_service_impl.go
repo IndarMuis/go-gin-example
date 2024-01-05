@@ -2,6 +2,7 @@ package impl
 
 import (
 	"github.com/IndarMuis/go-gin-example.git/src/model/dto"
+	"github.com/IndarMuis/go-gin-example.git/src/model/entity"
 	"github.com/IndarMuis/go-gin-example.git/src/repository"
 	"github.com/IndarMuis/go-gin-example.git/src/service"
 )
@@ -11,8 +12,23 @@ type BookServiceImpl struct {
 }
 
 func (service *BookServiceImpl) FindAll() ([]dto.BookResponse, error) {
-	//TODO implement me
-	panic("implement me")
+	resultBooks, err := service.bookRepository.FindAll()
+	if err != nil {
+		panic(err)
+	}
+
+	var books []dto.BookResponse
+	for _, book := range resultBooks {
+		books = append(books, dto.BookResponse{
+			ID:            book.ID,
+			Title:         book.Title,
+			Author:        book.Author,
+			Category:      book.Category,
+			PublishedYear: book.PublishedYear,
+		})
+	}
+
+	return books, nil
 }
 
 func (service *BookServiceImpl) FindById(id uint) (dto.BookResponse, error) {
@@ -26,8 +42,25 @@ func (service *BookServiceImpl) FindByName(name string) ([]dto.BookResponse, err
 }
 
 func (service *BookServiceImpl) Save(book dto.BookRequest) (dto.BookResponse, error) {
-	//TODO implement me
-	panic("implement me")
+	newBook := entity.Book{
+		Title:         book.Title,
+		Author:        book.Author,
+		Category:      book.Category,
+		PublishedYear: book.PublishedYear,
+	}
+
+	result, err := service.bookRepository.Save(&newBook)
+	if err != nil {
+		panic(err)
+	}
+
+	return dto.BookResponse{
+		ID:            result.ID,
+		Title:         result.Title,
+		Author:        result.Author,
+		Category:      result.Category,
+		PublishedYear: result.PublishedYear,
+	}, nil
 }
 
 func (service *BookServiceImpl) Update(book dto.BookRequest) (dto.BookResponse, error) {

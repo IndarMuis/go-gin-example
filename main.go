@@ -21,6 +21,7 @@ func main() {
 	bookController := controller.NewBookController(bookService)
 
 	app := gin.New()
+	app.Use(gin.Recovery())
 
 	// init routes
 	bookController.Routes(app)

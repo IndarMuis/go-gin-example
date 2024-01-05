@@ -8,7 +8,7 @@ import (
 )
 
 func NewDatabase() *sql.DB {
-	db, err := sql.Open("mysql", "root:al0homora@tcp(localhost:3306)/gin_db")
+	db, err := sql.Open("mysql", "dbuser:dbpassword@tcp(localhost:3306)/gin_db")
 	if err != nil {
 		fmt.Println("ERROR CONNECT TO DATABASE")
 		panic(err)

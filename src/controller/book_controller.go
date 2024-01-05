@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"github.com/IndarMuis/go-gin-example.git/src/model"
+	"github.com/IndarMuis/go-gin-example.git/src/model/dto"
 	"github.com/IndarMuis/go-gin-example.git/src/service"
 	"github.com/gin-gonic/gin"
 )
@@ -15,25 +17,55 @@ func NewBookController(bookService service.BookService) BookController {
 
 func (controller *BookController) Routes(app *gin.Engine) {
 	route := app.Group("/api/v1")
-	route.GET("/books", func(context *gin.Context) {
-		context.JSON(200, gin.H{
-			"data": "Book controller",
-		})
-	})
 
+	route.GET("/books", controller.FindAll)
 	route.POST("/books", controller.Save)
-	route.GET("/books:id", controller.FindById)
-	//route.GET("/books/findByName", controller.FindByName)
+	route.GET("/books/:id", controller.FindById)
+	//route.GET("/books/:findByName", controller.FindByName)
 	route.PUT("/books", controller.Update)
 	route.DELETE("/books", controller.Delete)
 }
 
 func (controller *BookController) FindAll(context *gin.Context) {
-	panic("implement me")
+	response, err := controller.BookService.FindAll()
+	if err != nil {
+		context.JSON(500, model.ResponseTemplate{
+			Code:    500,
+			Message: "INTERNAL_SERVER_ERROR",
+		})
+	}
+
+	context.JSON(200, model.ResponseTemplate{
+		Code:    200,
+		Message: "OK",
+		Data:    response,
+	})
 }
 
 func (controller *BookController) Save(context *gin.Context) {
-	panic("implement me")
+	var bookRequest dto.BookRequest
+	err := context.ShouldBindJSON(&bookRequest)
+	if err != nil {
+		context.JSON(400, model.ResponseTemplate{
+			Code:    400,
+			Message: "BAD_REQUEST",
+		})
+	}
+
+	bookResponse, err := controller.BookService.Save(bookRequest)
+
+	if err != nil {
+		context.JSON(500, model.ResponseTemplate{
+			Code:    500,
+			Message: "INTERNAL_SERVER_ERROR",
+		})
+	}
+
+	context.JSON(201, model.ResponseTemplate{
+		Code:    201,
+		Message: "CREATED",
+		Data:    bookResponse,
+	})
 }
 
 func (controller *BookController) FindById(context *gin.Context) {
