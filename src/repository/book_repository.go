@@ -1,8 +1,9 @@
 package repository
 
 import (
-	"database/sql"
+	"fmt"
 	"github.com/IndarMuis/go-gin-example.git/src/model/entity"
+	"gorm.io/gorm"
 )
 
 type BookRepository interface {
@@ -15,26 +16,27 @@ type BookRepository interface {
 }
 
 type BookRepositoryImpl struct {
-	*sql.DB
+	*gorm.DB
 }
 
 func (bookRepository *BookRepositoryImpl) FindAll() ([]*entity.Book, error) {
-	query := "SELECT id, title, author, category, published_year FROM book"
-	rows, err := bookRepository.DB.Query(query)
-	
-	if err != nil {
-		return nil, err
+	var books []*entity.Book
+
+	//query := "SELECT id, title, author_id, category, published_year FROM book"
+	rows := bookRepository.DB.Debug().Select("id, title, author_id, category_id, published_year").Find(&books)
+	if rows.Error != nil {
+		return nil, rows.Error
 	}
 
-	var books []*entity.Book
-	for rows.Next() {
-		book := entity.Book{}
-		err = rows.Scan(&book.ID, &book.Title, &book.Author, &book.Category, &book.PublishedYear)
-		if err != nil {
-			panic(err)
-		}
-		books = append(books, &book)
-	}
+	//var books []*entity.Book
+	//for rows.Next() {
+	//	book := entity.Book{}
+	//	err = rows.Scan(&book.ID, &book.Title, &book.AuthorId, &book.Category, &book.PublishedYear)
+	//	if err != nil {
+	//		panic(err)
+	//	}
+	//	books = append(books, &book)
+	//}
 
 	return books, nil
 }
@@ -50,33 +52,38 @@ func (bookRepository *BookRepositoryImpl) FindByName(name string) ([]*entity.Boo
 }
 
 func (bookRepository *BookRepositoryImpl) Save(book *entity.Book) (*entity.Book, error) {
-	tx, err := bookRepository.DB.Begin()
-	if err != nil {
-		panic(err)
+	tx := bookRepository.DB.Debug().Begin()
+
+	// insert into book table
+	saveBook := tx.Exec("INSERT INTO book (title, author_id, category_id, published_year) VALUES (?, ?, ?, ?)",
+		book.Title, book.AuthorId, book.CategoryId, book.PublishedYear)
+
+	if saveBook.Error != nil {
+		tx.Rollback()
+		return nil, saveBook.Error
 	}
 
-	//stmt, err := tx.Prepare("INSERT INTO book(title, author, category, publisherYear) VALUES(?, ?, ?, ?, ?)")
-	//if err != nil {
-	//	panic(err)
-	//}
+	var lastInsertId uint
+	saveBook.Select("id").Last(&entity.Book{}).Scan(&lastInsertId)
+	fmt.Println(lastInsertId)
 
-	result, err := tx.Exec("INSERT INTO book(title, author, category, published_year) VALUES(?, ?, ?, ?)", book.Title, book.Author, book.Category, book.PublishedYear)
-	if err != nil {
-		return nil, err
+	// insert into book_category table
+	saveBookCategory := tx.Exec("INSERT INTO book_category (book_id, category_id) VALUES (?, ?)",
+		lastInsertId, book.CategoryId)
+
+	if saveBookCategory.Error != nil {
+		tx.Rollback()
+		return nil, saveBookCategory.Error
 	}
 
 	tx.Commit()
-
-	lastInsertId, err := result.LastInsertId()
-	if err != nil {
-		panic(err)
-	}
+	//tx.Rollback()
 
 	return &entity.Book{
-		ID:            uint(lastInsertId),
+		ID:            lastInsertId,
 		Title:         book.Title,
-		Author:        book.Author,
-		Category:      book.Category,
+		AuthorId:      book.AuthorId,
+		CategoryId:    book.CategoryId,
 		PublishedYear: book.PublishedYear,
 	}, nil
 }
@@ -91,6 +98,6 @@ func (bookRepository *BookRepositoryImpl) Delete(book *entity.Book) (*entity.Boo
 	panic("implement me")
 }
 
-func NewBookRepository(db *sql.DB) BookRepository {
+func NewBookRepository(db *gorm.DB) BookRepository {
 	return &BookRepositoryImpl{DB: db}
 }

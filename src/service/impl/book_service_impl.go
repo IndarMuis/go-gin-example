@@ -22,8 +22,9 @@ func (service *BookServiceImpl) FindAll() ([]dto.BookResponse, error) {
 		books = append(books, dto.BookResponse{
 			ID:            book.ID,
 			Title:         book.Title,
-			Author:        book.Author,
+			AuthorId:      book.AuthorId,
 			Category:      book.Category,
+			CategoryId:    book.CategoryId,
 			PublishedYear: book.PublishedYear,
 		})
 	}
@@ -44,13 +45,13 @@ func (service *BookServiceImpl) FindByName(name string) ([]dto.BookResponse, err
 func (service *BookServiceImpl) Save(book dto.BookRequest) (dto.BookResponse, error) {
 	newBook := entity.Book{
 		Title:         book.Title,
-		Author:        book.Author,
-		Category:      book.Category,
+		AuthorId:      book.AuthorId,
+		CategoryId:    book.CategoryId,
 		PublishedYear: book.PublishedYear,
 	}
 
 	result, err := service.bookRepository.Save(&newBook)
-	if err != nil {
+	if err != nil || result == nil {
 		panic(err)
 	}
 
@@ -58,7 +59,9 @@ func (service *BookServiceImpl) Save(book dto.BookRequest) (dto.BookResponse, er
 		ID:            result.ID,
 		Title:         result.Title,
 		Author:        result.Author,
+		AuthorId:      result.AuthorId,
 		Category:      result.Category,
+		CategoryId:    result.CategoryId,
 		PublishedYear: result.PublishedYear,
 	}, nil
 }

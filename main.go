@@ -9,7 +9,10 @@ import (
 )
 
 func main() {
-	db := config.NewDatabase()
+
+	commonConfig := config.New(".env")
+
+	db := config.NewDatabase(commonConfig)
 
 	// init repository
 	bookRepository := repository.NewBookRepository(db)
